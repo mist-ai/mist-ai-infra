@@ -144,10 +144,81 @@ services:
       retries: 3
       timeout: 10s
 
+  postgres:
+    image: postgres:latest
+    container_name: postgres-cntr
+    volumes:
+      - mist_postgres:/var/lib/postgresql@15.4
+    ports:
+      - "5432:5432"
+    networks:
+      - kafka_elk_nw
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root123
+      POSTGRES_DB: fyp
+
+  qdrant:
+    image: cgr.dev/chainguard/qdrant:latest
+    container_name: qdrant-cntr
+    ports:
+      - "6333:6333"
+    networks:
+      - kafka_elk_nw
+    volumes:
+      - mist_qdrant:/qdrant/storage
+
+  minio:
+    image: bitnami/minio:latest
+    container_name: minio-cntr
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 5s
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - kafka_elk_nw
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=admin1234
+    volumes:
+      - mist_minio:/bitnami/minio/data
+    command: minio server /bitnami/minio/data --address :9000 --console-address :9001
+
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j-cntr
+    user: neo4j:neo4j
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - mist_neo4j:/data
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME-neo4j}/${NEO4J_PASSWORD-password}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_db_tx__log_rotation_retention__policy=false
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    healthcheck:
+        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+        interval: 15s
+        timeout: 30s
+        retries: 10
+    networks:
+      - kafka_elk_nw
+
 networks:
   kafka_elk_nw:
     driver: bridge
 
 volumes:
+  mist_qdrant:
+  mist_postgres:
+  mist_minio:
+  mist_neo4j:
   elasticsearch_data:
     driver: local
