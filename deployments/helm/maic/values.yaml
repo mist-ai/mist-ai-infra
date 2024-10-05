@@ -1,0 +1,23 @@
+## -- Partially overrides name of the deployed resources. Release name is maintained.
+nameOverride: ""
+## -- Fully overrides name of the deployed resources.
+fullnameOverride: "maic"
+# -- Override the namespace the application is deployed to.
+# If not specified, the namespace of the release is used.
+namespaceOverride: "maic"
+
+postgresql:
+  enabled: true
+  auth:
+    username: delta_trusted_user
+    password: delta_trusted_user_password
+    database: delta_dev
+  primary:
+    persistence:
+      size: 200Mi
+
+minio:
+  enabled: false
+
+keycloak:
+  enabled: false
